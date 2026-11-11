@@ -22,7 +22,7 @@ button{background:var(--n);color:#fff;border:0;padding:8px 14px;border-radius:7p
 h3{color:var(--n);margin:14px 0 6px}.warn{background:#fff4d6;border-left:5px solid #e0a800}
 @media(max-width:800px){#side{position:static;width:auto;display:flex;overflow-x:auto}#side a{white-space:nowrap}#main{margin-left:0;padding:10px}}
 </style></head><body>
-<header><b>SISAS - Sistem Informasi Supervisi Akademik Sekolah</b><small>SD Negeri 1 Umpang · Kurikulum Merdeka · Pembelajaran Mendalam · versi 11/11/2026-b</small></header>
+<header><b>SISAS - Sistem Informasi Supervisi Akademik Sekolah</b><small>SD Negeri 1 Umpang · Kurikulum Merdeka · Pembelajaran Mendalam · versi 11/11/2026-c</small></header>
 <div id="login" class="card"><h3>Login</h3><label>URL Web App (Apps Script, berakhiran /exec)<input id="api" placeholder="https://script.google.com/macros/s/.../exec"></label><label>Nama pengguna<input id="un" value="admin"></label><label>Kata sandi<input id="pw" type="password" onkeydown="if(event.key=='Enter')login()"></label><button onclick="login()">Masuk</button><p style="font-size:12px;color:#667">Tempel URL Web App di kolom paling atas (disimpan di peramban ini). Buka berkas ini langsung dari komputer atau hosting, bukan dari pratinjau Claude.</p></div>
 <div id="app" hidden><nav id="side"></nav><main id="main"></main></div><dialog id="dlg"></dialog><div id="toast"></div>
 <script>
@@ -62,9 +62,9 @@ let PW='',U='',ROLE='',DJ='',FORM=0,SET={},S={g:[],s:[],t:[],m:[]},CUR={};
 const $=i=>document.getElementById(i),esc=x=>String(x==null?'':x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const f1=p=>p==null?'-':p.toFixed(1)+'%',tgl=d=>d?new Date(d).toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'-';
 const addD=(d,n)=>{const x=new Date(d||Date.now());x.setDate(x.getDate()+n);return x.toISOString().slice(0,10)};
-function toast(m,b){const t=$('toast');t.textContent=m;t.className='show'+(b?' bad':'');setTimeout(()=>t.className='',3500)}
+function toast(m,b,ms){const t=$('toast');t.textContent=m;t.className='show'+(b?' bad':'');clearTimeout(window._tt);window._tt=setTimeout(()=>t.className='',ms||3500)}
 async function api(a,s,d,id){try{if(!/^https:\/\/script\.google\.com\/.+\/exec/.test(API))throw 'URL Web App belum diisi atau tidak valid (harus berawalan https://script.google.com dan berakhiran /exec)';const r=await fetch(API,{method:'POST',body:JSON.stringify({a,s,d,id,u:U,pw:PW})});let j;try{j=JSON.parse(await r.text())}catch(x){throw 'Server tidak mengembalikan data yang benar. Pastikan Web App di-deploy dengan akses "Anyone" dan versi terbaru'}if(!j.ok)throw j.err;return j}catch(e){toast('Gagal: '+e,1);throw e}}
-async function login(){const au=$('api').value.trim();if(au){API=au;try{localStorage.setItem('sisas_api',au)}catch(e){}}PW=$('pw').value;U=$('un').value.trim();const j=await api('login');if(!j.valid)return toast('Nama pengguna/kata sandi salah',1);ROLE=j.role;$('login').hidden=true;$('app').hidden=false;$('side').innerHTML=MENU.map(m=>`<a id="m_${m[0]}" onclick="go('${m[0]}')">${m[1]}</a>`).join('');await load();go('dash')}
+async function login(){const au=$('api').value.trim();if(au){API=au;try{localStorage.setItem('sisas_api',au)}catch(e){}}PW=$('pw').value;U=$('un').value.trim();const j=await api('login');if(!j.valid)return toast('Nama pengguna/kata sandi salah',1);ROLE=j.role;if(!j.role)alert('Peringatan: backend (Code.gs) masih versi lama. Tempel Code.gs terbaru, jalankan setup(), lalu Deploy > Manage deployments > Edit > New version. Tanpa itu, penyimpanan supervisi tidak akan lengkap.');$('login').hidden=true;$('app').hidden=false;$('side').innerHTML=MENU.map(m=>`<a id="m_${m[0]}" onclick="go('${m[0]}')">${m[1]}</a>`).join('');await load();go('dash')}
 async function load(){const r=await Promise.all(['Data_Guru','Data_Supervisi','Tindak_Lanjut','Monitoring','Identitas_Sekolah'].map(n=>api('list',n)));S.g=r[0].data;S.s=r[1].data;S.t=r[2].data;S.m=r[3].data;SET=r[4].data.find(o=>o.id=='sekolah')||{};if(SET.nama){SCH.nama=SET.nama.toUpperCase();SCH.alamat=SET.alamat||SCH.alamat}}
 function go(v){FORM=0;document.querySelectorAll('#side a').forEach(a=>a.className=a.id=='m_'+v?'on':'');({dash:vDash,guru:vGuru,baru:newSup,adm:()=>newSup('adm'),riwayat:vRiw,tl:vTL,set:vSet})[v]()}
 const kat=p=>p==null?'-':p>=90?'Sangat Baik':p>=80?'Baik':p>=70?'Cukup':'Perlu Pembinaan Intensif';
@@ -100,13 +100,26 @@ function vForm(){FORM=1;use(CUR.jenis);CUR.st=CUR.st||{};$('main').innerHTML=`<d
 function updRes(){$('res').innerHTML=resH(calc(CUR.st));sigInit()}
 const resH=r=>`<b>Nilai Akhir: ${f1(r.p)} - ${kat(r.p)}</b> | Dinilai ${r.n} indikator | Sesuai ${r.c[2]} | Perlu Perbaikan ${r.c[1]} | Tidak Sesuai ${r.c[0]}<details><summary>Nilai per aspek</summary>${bars(I.map((g,i)=>[g[0],r.as[i]]))}</details>`;
 function setS(k,v){(CUR.st[k]=CUR.st[k]||{}).s=v;updRes()}function setC(k,v){(CUR.st[k]=CUR.st[k]||{}).c=v}
-async function saveSup(){const c=CUR;if(!c.guruId)return toast('Pilih guru terlebih dahulu',1);if(!c.tanggal)return toast('Tanggal supervisi wajib diisi',1);if(c.hadir<0||c.tidak<0)return toast('Jumlah peserta didik tidak valid',1);
-const r=calc(c.st);c.p=r.p==null?'':+r.p.toFixed(1);c.kat=kat(r.p);const j=await api('save','Data_Supervisi',c);c.id=j.id;
-if(c.tl){const o=S.t.find(x=>x.supId==c.id);await api('save','Tindak_Lanjut',{id:'TL-'+c.id,supId:c.id,guru:c.guru,masalah:c.tlm||'',rek:c.tlr||'',teks:c.tl,batas:o?o.batas:(c.tlb||''),status:o?o.status:STT[0]})}
+async function saveSup(){const c=CUR,bt=document.querySelector('button[onclick="saveSup()"]');
+if(!c.guruId)return alert('Pilih guru terlebih dahulu (kolom Nama Guru di bagian Identitas).');
+if(!c.tanggal)return alert('Isi Hari dan Tanggal supervisi di bagian Identitas.');
+if(c.hadir<0||c.tidak<0)return alert('Jumlah peserta didik tidak boleh negatif.');
+const big=Object.keys(c).find(k=>JSON.stringify(c[k]==null?'':c[k]).length>45000);if(big)return alert('Isian "'+big+'" terlalu besar untuk satu sel Google Sheets (maks 50.000 karakter). Gunakan gambar tanda tangan yang lebih kecil.');
+if(bt)bt.disabled=true;let step='';
+try{use(c.jenis);c.guru=(S.g.find(x=>x.id==c.guruId)||{}).nama||c.guru;const r=calc(c.st);c.p=r.p==null?'':+r.p.toFixed(1);c.kat=kat(r.p);
+step='data supervisi';toast('Menyimpan 1/4: data supervisi...',0,90000);const j=await api('save','Data_Supervisi',c);c.id=j.id;
+step='catatan dan tindak lanjut';toast('Menyimpan 2/4: catatan dan tindak lanjut...',0,90000);
 const cp={id:'CP-'+c.id,supId:c.id,guru:c.guru,tanggal:c.tanggal,catatan:c.catatan||''};PB.forEach(p=>cp[p[0]]=c[p[0]]||'');await api('save','Catatan_Pertemuan',cp);
+if(c.tl){const o=S.t.find(x=>x.supId==c.id);await api('save','Tindak_Lanjut',{id:'TL-'+c.id,supId:c.id,guru:c.guru,masalah:c.tlm||'',rek:c.tlr||'',teks:c.tl,batas:o?o.batas:(c.tlb||''),status:o?o.status:STT[0]})}
+let warn='';
+try{step='hasil penilaian';toast('Menyimpan 3/4: hasil penilaian...',0,90000);
 const hp=IT(c.st).map(x=>({id:c.id+'_'+x.i+'_'+x.j,supId:c.id,jenis:c.jenis,guru:c.guru,tanggal:c.tanggal,aspek:I[x.i][0],indikator:x.t,status:['Tidak Sesuai','Perlu Perbaikan','Sesuai'][x.s],skor:x.s,catatan:x.c}));await api('bulk','Hasil_Penilaian',{rows:hp,key:'supId',val:c.id});
-const mo=(c.tlg||[]).map(g=>{const o=S.m.find(m=>m.id=='M-'+c.id+'-'+g.i);return{id:'M-'+c.id+'-'+g.i,supId:c.id,guru:c.guru,aspek:g.a,masalah:g.m,rekomendasi:g.r,target:'Indikator berstatus Sesuai',batas:o?o.batas:(c.tlb||''),status:o?o.status:STT[0]}});await api('bulk','Monitoring',{rows:mo,key:'supId',val:c.id});
-try{localStorage.removeItem('sisas_draft')}catch(e){}await load();toast('Supervisi tersimpan');vForm()}
+step='monitoring';toast('Menyimpan 4/4: monitoring...',0,90000);
+const mo=(c.tlg||[]).map(g=>{const o=S.m.find(m=>m.id=='M-'+c.id+'-'+g.i);return{id:'M-'+c.id+'-'+g.i,supId:c.id,guru:c.guru,aspek:g.a,masalah:g.m,rekomendasi:g.r,target:'Indikator berstatus Sesuai',batas:o?o.batas:(c.tlb||''),status:o?o.status:STT[0]}});await api('bulk','Monitoring',{rows:mo,key:'supId',val:c.id})}catch(e){warn=String(e)}
+try{localStorage.removeItem('sisas_draft')}catch(e){}
+await load();
+if(warn)alert('Supervisi TERSIMPAN, tetapi sheet Hasil_Penilaian/Monitoring belum terisi (langkah '+step+'): '+warn+'\n\nBiasanya karena Code.gs di Apps Script belum versi terbaru. Tempel Code.gs terbaru, jalankan setup(), lalu Deploy > Manage deployments > Edit > New version.');else toast('Supervisi tersimpan');
+vForm()}catch(e){alert('Gagal menyimpan pada langkah "'+step+'": '+e)}finally{if(bt)bt.disabled=false}}
 /* ===== Generate ===== */
 const nm=n=>I[n][0].replace(/^\w+\.\s*/,''),lst=(a,n)=>a.slice(0,n).map(x=>x.t.replace(/\.$/,'')).join('; '),nt=a=>a.filter(x=>x.c).slice(0,4).map(x=>x.c).join('; ');
 function genCat(){const c=CUR,r=calc(c.st),it=IT(c.st);if(!r.n)return toast('Isi penilaian terlebih dahulu',1);const g=S.g.find(x=>x.id==c.guruId)||{},ok=it.filter(x=>x.s==2),pp=it.filter(x=>x.s==1),ts=it.filter(x=>x.s==0),bad=it.filter(x=>x.s<2);
