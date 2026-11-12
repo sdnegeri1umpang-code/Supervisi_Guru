@@ -22,7 +22,7 @@ button{background:var(--n);color:#fff;border:0;padding:8px 14px;border-radius:7p
 h3{color:var(--n);margin:14px 0 6px}.warn{background:#fff4d6;border-left:5px solid #e0a800}
 @media(max-width:800px){#side{position:static;width:auto;display:flex;overflow-x:auto}#side a{white-space:nowrap}#main{margin-left:0;padding:10px}}
 </style></head><body>
-<header><b>SISAS - Sistem Informasi Supervisi Akademik Sekolah</b><small>SD Negeri 1 Umpang · Kurikulum Merdeka · Pembelajaran Mendalam · versi 11/11/2026-c</small></header>
+<header><b>SISAS - Sistem Informasi Supervisi Akademik Sekolah</b><small>SD Negeri 1 Umpang · Kurikulum Merdeka · Pembelajaran Mendalam · versi 12/11/2026-d</small></header>
 <div id="login" class="card"><h3>Login</h3><label>URL Web App (Apps Script, berakhiran /exec)<input id="api" placeholder="https://script.google.com/macros/s/.../exec"></label><label>Nama pengguna<input id="un" value="admin"></label><label>Kata sandi<input id="pw" type="password" onkeydown="if(event.key=='Enter')login()"></label><button onclick="login()">Masuk</button><p style="font-size:12px;color:#667">Tempel URL Web App di kolom paling atas (disimpan di peramban ini). Buka berkas ini langsung dari komputer atau hosting, bukan dari pratinjau Claude.</p></div>
 <div id="app" hidden><nav id="side"></nav><main id="main"></main></div><dialog id="dlg"></dialog><div id="toast"></div>
 <script>
@@ -88,7 +88,11 @@ async function saveG(id){const d={id};GF.forEach(f=>d[f[0]]=$('f_'+f[0]).value.t
 if(S.g.some(g=>g.nip==d.nip&&g.id!=id))return toast('NIP/NUPTK sudah terdaftar',1);await api('save','Data_Guru',d);$('dlg').close();await load();vGuru();toast('Data guru tersimpan')}
 async function delG(id){if(!confirm('Hapus guru ini?'))return;await api('del','Data_Guru',null,id);await load();vGuru();toast('Data guru dihapus')}
 /* ===== Form Supervisi ===== */
-function newSup(j){const d=new Date(),m=d.getMonth()+1,y=d.getFullYear();CUR={jenis:j=='adm'?'adm':'pem',semester:SET.semester||(m>=7?'Ganjil':'Genap'),ta:SET.ta||(m>=7?y+'/'+(y+1):(y-1)+'/'+y),supervisor:KS().n,ttdK:SET.ttdK||'',st:{}};let dr;try{dr=localStorage.getItem('sisas_draft')}catch(e){}if(dr&&(JSON.parse(dr).jenis||'pem')==CUR.jenis){if(confirm('Lanjutkan draf terakhir yang belum disimpan?'))CUR=JSON.parse(dr);else try{localStorage.removeItem('sisas_draft')}catch(e){}}vForm()}
+function newSup(j){const d=new Date(),m=d.getMonth()+1,y=d.getFullYear();CUR={jenis:j=='adm'?'adm':'pem',semester:SET.semester||(m>=7?'Ganjil':'Genap'),ta:SET.ta||(m>=7?y+'/'+(y+1):(y-1)+'/'+y),supervisor:KS().n,ttdK:SET.ttdK||'',st:{}};vForm();showDraft()}
+function getDraft(){try{const d=JSON.parse(localStorage.getItem('sisas_draft')||'null');if(d&&d.c&&Date.now()-d.t<216e5&&(d.c.jenis||'pem')==CUR.jenis)return d}catch(e){}return null}
+function showDraft(){const d=getDraft();if(!d)return;$('main').insertAdjacentHTML('afterbegin',`<div class="card warn" id="drf">Ada draf supervisi yang belum disimpan (${esc(d.c.guru||'tanpa nama')}). <button class="g" onclick="useDraft()">Lanjutkan draf</button><button class="w" onclick="delDraft()">Buang draf</button></div>`)}
+function useDraft(){const d=getDraft();if(d){CUR=d.c;vForm()}}
+function delDraft(){try{localStorage.removeItem('sisas_draft')}catch(e){}const x=$('drf');if(x)x.remove()}
 const fld=(k,l,t)=>`<label>${l}<input type="${t||'text'}" value="${esc(CUR[k])}" oninput="CUR['${k}']=this.value"></label>`,ta=(k,l)=>`<label>${l}<textarea rows="3" oninput="CUR['${k}']=this.value">${esc(CUR[k])}</textarea></label>`;
 function supSel(){const us=(S.u||[]).map(u=>({n:u.nama||u.id,r:u.role})),cur=CUR.supervisor||'',ex=cur&&!us.some(u=>u.n==cur);return`<label>Kepala Sekolah/Supervisor<select onchange="setSup(this.value)"><option value="">- pilih pengguna -</option>${us.map(u=>`<option value="${esc(u.n)}" ${u.n==cur?'selected':''}>${esc(u.n)} (${esc(u.r)})</option>`).join('')}${ex?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:''}<option value="__lain">Lainnya (ketik nama)...</option></select></label>`}
 function setSup(v){if(v=='__lain'){const n=prompt('Ketik nama supervisor:');if(n&&n.trim())CUR.supervisor=n.trim()}else CUR.supervisor=v;vForm()}
@@ -157,7 +161,7 @@ let d=0;const xy=e=>{const b=c.getBoundingClientRect();return[(e.clientX-b.left)
 c.onpointerdown=e=>{d=1;x.beginPath();x.moveTo(...xy(e))};c.onpointermove=e=>{if(d){x.lineTo(...xy(e));x.stroke()}};c.onpointerup=c.onpointerleave=()=>{if(d){d=0;tgt(o)[k]=c.toDataURL('image/jpeg',.6)}}})}
 function sigClr(k,o){tgt(o)[k]='';sigInit()}
 function sigUp(i,k,o){const f=i.files[0];if(!f)return;const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=240;c.height=100;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,240,100);const s=Math.min(240/im.width,100/im.height);x.drawImage(im,0,0,im.width*s,im.height*s);tgt(o)[k]=c.toDataURL('image/jpeg',.6);sigInit()};im.src=URL.createObjectURL(f)}
-setInterval(()=>{try{if(FORM&&CUR&&!CUR.id&&CUR.guruId&&!$('app').hidden)localStorage.setItem('sisas_draft',JSON.stringify(CUR))}catch(e){}},15000);
+setInterval(()=>{try{if(FORM&&CUR&&!CUR.id&&CUR.guruId&&Object.keys(CUR.st||{}).length&&!$('app').hidden)localStorage.setItem('sisas_draft',JSON.stringify({t:Date.now(),c:CUR}))}catch(e){}},15000);
 async function impG(f){if(!f)return;if(!window.XLSX)return toast('Pustaka Excel gagal dimuat (perlu internet)',1);const wb=XLSX.read(await f.arrayBuffer()),js=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',raw:false}),rows=[];let skip=0;
 js.forEach(o=>{const d={};GF.forEach(g=>{const k=Object.keys(o).find(x=>{const y=x.trim().toLowerCase();return y==g[0]||y==g[1].toLowerCase()});d[g[0]]=k?String(o[k]).trim():''});if(!d.nama||!d.nip||S.g.some(x=>x.nip==d.nip)||rows.some(x=>x.nip==d.nip))skip++;else rows.push(d)});
 if(rows.length)await api('bulk','Data_Guru',{rows,app:1});await load();vGuru();toast(rows.length+' guru diimpor, '+skip+' dilewati (kosong/duplikat)')}
